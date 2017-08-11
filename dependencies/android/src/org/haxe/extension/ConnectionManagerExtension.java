@@ -13,25 +13,35 @@ import android.app.Application;
 import java.util.*;
 import java.lang.System;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
+import android.net.NetworkInfo;
 
 public class ConnectionManagerExtension extends Extension {
 
 	public static boolean isConnected () {
 		
 		Log.v("ConnectionManagerExtension", "isConnected");
-		return true;
+		int r = ConnectionManagerExtension.getActiveConnectionType();
+		return r != 0;
 	}
 
 	public static int getActiveConnectionType () {
 
 		Log.v("ConnectionManagerExtension", "getActiveConnectionType");
+		ConnectivityManager connMgr = (ConnectivityManager)
+				mainActivity.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+		NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
+		if (activeInfo != null && activeInfo.isConnected())
+		{
+			if (activeInfo.getType() == ConnectivityManager.TYPE_WIFI) return 1;
+			if (activeInfo.getType() == ConnectivityManager.TYPE_MOBILE) return 2;
+		}
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * Called when an activity you launched exits, giving you the requestCode 
 	 * you started it with, the resultCode it returned, and any additional data 
