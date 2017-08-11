@@ -11,6 +11,7 @@
 		<compilerflag value="-IincludeIos"/>
 		<file name="common/ExternalInterface.mm"/>
 		<file name="common/ConnectionManagerExtension.mm"/>
+		<file name="common/Reachability.m"/>
 	</files>
 	
 	<set name="DEBUGEXTRA" value="-debug" if="fulldebug" />

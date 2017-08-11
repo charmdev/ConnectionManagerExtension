@@ -14,16 +14,16 @@ using namespace connectionmanagerextension;
 
 
 
-static bool connectionmanagerextension_isConnected () {
+static value connectionmanagerextension_isConnected () {
 
-	return isConnected ();
+	return alloc_bool(isConnected ());
 
 }
 DEFINE_PRIM (connectionmanagerextension_isConnected, 0);
 
-static int connectionmanagerextension_getActiveConnectionType () {
+static value connectionmanagerextension_getActiveConnectionType () {
 
-	return getActiveConnectionType();
+	return alloc_int(getActiveConnectionType());
 
 }
 DEFINE_PRIM (connectionmanagerextension_getActiveConnectionType, 0);
