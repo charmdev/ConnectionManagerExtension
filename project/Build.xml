@@ -3,13 +3,13 @@
 	<include name="${HXCPP}/build-tool/BuildCommon.xml"/>
 
 	<files id="common">
-		<compilerflag value="-IincludeAndroid"/>
+		<compilerflag value="-IincludeIos"/>
 		<file name="common/ExternalInterface.cpp"/>
 		<file name="common/ConnectionManagerExtension.cpp"/>
 	</files>
 	<files id="iphone">
 		<compilerflag value="-IincludeIos"/>
-		<file name="common/ExternalInterface.mm"/>
+		<file name="common/ExternalInterface.cpp"/>
 		<file name="common/ConnectionManagerExtension.mm"/>
 		<file name="common/Reachability.m"/>
 	</files>

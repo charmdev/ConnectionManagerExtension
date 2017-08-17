@@ -10,7 +10,10 @@ import neko.Lib;
 import openfl.utils.JNI;
 #end
 
+import haxe.Json;
+
 class ConnectionManagerExtension {
+	private static var requestId:Int = 0;
 
 	public static function isConnected():Bool
 	{
@@ -54,11 +57,36 @@ class ConnectionManagerExtension {
 		return res;
 	}
 
-
-
+	public static function getText (url:String, onSuccess:String -> Void, onError:String -> Void):Void
+	{
+		trace("getText",url);
+		#if ios
+		connectionmanagerextension_getText(url, requestId, onSuccess, onError);
+		requestId += 1;
+		#end
+	}
+	public static function getBinary (url:String, onSuccess:String -> Void, onError:String -> Void):Void
+	{
+		trace("getBinary",url);
+		#if ios
+		connectionmanagerextension_getBinary(url, requestId, onSuccess, onError);
+		requestId += 1;
+		#end
+	}
+	public static function postJson (url:String, data:Dynamic, onSuccess:String -> Void, onError:String -> Void):Void
+	{
+		trace("postJson",url,data);
+		#if ios
+		connectionmanagerextension_postJson(url, Json.stringify(data), requestId, onSuccess, onError);
+		requestId += 1;
+		#end
+	}
 	#if ios
 	private static var connectionmanagerextension_isConnected = Lib.load("connectionmanagerextension", "connectionmanagerextension_isConnected", 0);
 	private static var connectionmanagerextension_getActiveConnectionType = Lib.load("connectionmanagerextension", "connectionmanagerextension_getActiveConnectionType", 0);
+	private static var connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 4);
+	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", 4);
+	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", 5);
 	#end
 
 	#if (android && openfl)
