@@ -120,7 +120,7 @@ extern "C" void runPostJsonEvent(int id, const char* data);
 
     NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession]
       dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-      	NSLog(@"connectionmanagerextension completionHandler");
+      	NSLog(@"connectionmanagerextension getText completionHandler");
       	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
       	[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
         	runEvent(id, [strData UTF8String]);
@@ -133,13 +133,24 @@ extern "C" void runPostJsonEvent(int id, const char* data);
 {
     NSURL *nurl = [NSURL URLWithString:url];
 
-    NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession]
-      dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-      	NSLog(@"connectionmanagerextension completionHandler");
-      	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
-      	[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-        	runBinaryEvent(id, [strData UTF8String]);
-        }];
+    NSURLSessionTask *downloadTask = [[NSURLSession sharedSession]
+      downloadTaskWithURL:nurl completionHandler:^(NSURL *data, NSURLResponse *response, NSError *error) {
+      	NSLog(@"connectionmanagerextension getBinary completionHandler");
+      	NSData *ddata = [NSData dataWithContentsOfURL: data];
+      	NSString *strData = [[NSString alloc]initWithData:ddata encoding:NSUTF8StringEncoding];
+      	if (strData == nil) {
+      		NSString *encodedString = [ddata base64Encoding];
+
+			[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+				runBinaryEvent(id, [encodedString UTF8String]);
+			}];
+      	} else {
+      		[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+				runEvent(id, [strData UTF8String]);
+			}];
+      	}
+
+
 
     }];
     [downloadTask resume];
