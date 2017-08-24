@@ -11,6 +11,8 @@ import openfl.utils.JNI;
 #end
 
 import haxe.Json;
+import haxe.crypto.Base64;
+import haxe.io.Bytes;
 
 class ConnectionManagerExtension {
 	private static var requestId:Int = 0;
@@ -56,8 +58,8 @@ class ConnectionManagerExtension {
 
 		return res;
 	}
-
-	public static function getText (url:String, onSuccess:String -> Void, onError:String -> Void):Void
+	@:allow(IosHttp)
+	private static function getText (url:String, onSuccess:String -> Void, onError:String -> Void):Void
 	{
 		trace("getText",url);
 		#if ios
@@ -65,19 +67,27 @@ class ConnectionManagerExtension {
 		requestId += 1;
 		#end
 	}
-	public static function getBinary (url:String, onSuccess:String -> Void, onError:String -> Void):Void
+	@:allow(IosHttp)
+	private static function getBinary (url:String, onSuccess:String -> Void, onError:String -> Void):Void
 	{
 		trace("getBinary",url);
 		#if ios
-		connectionmanagerextension_getBinary(url, requestId, onSuccess, onError);
+		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onError);
 		requestId += 1;
 		#end
 	}
-	public static function postJson (url:String, data:Dynamic, onSuccess:String -> Void, onError:String -> Void):Void
+	private static function onBinarySuccess (onSuccess:String -> Void, data:String):Void
+	{
+		var decoded:Bytes = Base64.decode(data);
+		var content:String = decoded.toString();
+		onSuccess(content);
+	}
+	@:allow(IosHttp)
+	private static function postJson (url:String, data:String, onSuccess:String -> Void, onError:String -> Void):Void
 	{
 		trace("postJson",url,data);
 		#if ios
-		connectionmanagerextension_postJson(url, Json.stringify(data), requestId, onSuccess, onError);
+		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError);
 		requestId += 1;
 		#end
 	}
