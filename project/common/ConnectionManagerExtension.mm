@@ -5,20 +5,24 @@
 extern "C" void runEvent(int id, const char* data);
 extern "C" void runBinaryEvent(int id, const char* data);
 extern "C" void runPostJsonEvent(int id, const char* data);
+extern "C" void runConnectionCallback(int);
 
 @interface NetworkInfos:NSObject
 
 @property (retain, nonatomic)  Reachability* reach;
+@property (atomic, atomic)  BOOL statusCallbackSetted;
 
 +(NetworkInfos *) getInstance;
 
 -(bool)isConnected;
 -(int)getActiveConnectionType;
+-(void)connectionStatusCallbackSet;
 @end
 
 @implementation NetworkInfos
 
 @synthesize reach;
+@synthesize statusCallbackSetted;
 
 +(NetworkInfos *)getInstance
 {
@@ -37,9 +41,18 @@ extern "C" void runPostJsonEvent(int id, const char* data);
 {
 	if( self == [super init])
 	{
-		self.reach = [Reachability reachabilityForInternetConnection]; //retain reach
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNetworkChange:) name:kReachabilityChangedNotification object:nil];
+		self.reach = [Reachability reachabilityForInternetConnection];
+		[self.reach startNotifier];
+		self.statusCallbackSetted = NO;
 	}
 	return self;
+}
+- (void) handleNetworkChange:(NSNotification *)notice
+{
+	if (self.statusCallbackSetted == YES) {
+    	runConnectionCallback([self getActiveConnectionType]);
+    }
 }
 
 -(NetworkStatus)getStatus
@@ -54,6 +67,10 @@ extern "C" void runPostJsonEvent(int id, const char* data);
 {
 	NetworkStatus networkStatus = [self getStatus];
 	return networkStatus != NotReachable;
+}
+-(void)connectionStatusCallbackSet
+{
+	self.statusCallbackSetted = YES;
 }
 
 -(int)getActiveConnectionType
@@ -192,6 +209,9 @@ namespace connectionmanagerextension {
 		NSLog(@"connectionmanagerextension getActiveConnectionType");
 		int result = [[NetworkInfos getInstance] getActiveConnectionType];
         return result;
+    }
+    void connectionStatusCallbackSet () {
+    	[[NetworkInfos getInstance] connectionStatusCallbackSet];
     }
     void getText (std::string url, int rId) {
     	NSLog(@"connectionmanagerextension getText");

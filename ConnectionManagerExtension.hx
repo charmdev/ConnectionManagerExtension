@@ -41,7 +41,11 @@ class ConnectionManagerExtension {
 			type = connectionmanagerextension_getActiveConnectionType();
 		#end
 
-		var res:ConnectionType = switch(type)
+		return getConnectionTypeFromInt(type);
+	}
+	private static function getConnectionTypeFromInt (t: Int): ConnectionType
+	{
+		var res:ConnectionType = switch(t)
 		{
 			case 0:
 				ConnectionType.NONE;
@@ -57,6 +61,17 @@ class ConnectionManagerExtension {
 		}
 
 		return res;
+	}
+	public static function connectionStatusCallback (callback:ConnectionType -> Void):Void
+	{
+		trace("connectionStatusCallback");
+		#if ios
+		connectionmanagerextension_connectionStatusCallback(onConnectionChanged.bind(callback));
+		#end
+	}
+	private static function onConnectionChanged (callback:ConnectionType -> Void, status:Int):Void
+	{
+		callback(getConnectionTypeFromInt(status));
 	}
 	@:allow(IosHttp)
 	private static function getText (url:String, onSuccess:String -> Void, onError:String -> Void):Void
@@ -94,6 +109,7 @@ class ConnectionManagerExtension {
 	#if ios
 	private static var connectionmanagerextension_isConnected = Lib.load("connectionmanagerextension", "connectionmanagerextension_isConnected", 0);
 	private static var connectionmanagerextension_getActiveConnectionType = Lib.load("connectionmanagerextension", "connectionmanagerextension_getActiveConnectionType", 0);
+	private static var connectionmanagerextension_connectionStatusCallback = Lib.load("connectionmanagerextension", "connectionmanagerextension_connectionStatusCallback", 1);
 	private static var connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 4);
 	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", 4);
 	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", 5);

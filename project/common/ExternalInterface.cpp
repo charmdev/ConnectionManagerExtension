@@ -23,6 +23,7 @@ struct Handler {
 } ;
 
 std::map<int,Handler> handlers;
+AutoGCRoot* connectionCallback;
 
 static value connectionmanagerextension_isConnected () {
 
@@ -37,6 +38,13 @@ static value connectionmanagerextension_getActiveConnectionType () {
 
 }
 DEFINE_PRIM (connectionmanagerextension_getActiveConnectionType, 0);
+
+static void connectionmanagerextension_connectionStatusCallback (value callback) {
+
+	connectionCallback = new AutoGCRoot(callback);
+	connectionStatusCallbackSet();
+}
+DEFINE_PRIM (connectionmanagerextension_connectionStatusCallback, 1);
 
 static void connectionmanagerextension_getText (value url, value rId, value onSuccess, value onError) {
 
@@ -100,4 +108,8 @@ extern "C" void runPostJsonEvent(int id, const char* data)
 		val_call1(handlers[id].onSuccess->get(), safe_alloc_string(data));
 		handlers.erase(id);
 	}
+}
+extern "C" void runConnectionCallback(int status)
+{
+	val_call1(connectionCallback->get(), alloc_int(status));
 }
