@@ -1,6 +1,5 @@
 package org.haxe.extension;
 
-
 import android.app.Activity;
 import android.content.res.AssetManager;
 import android.content.Context;
@@ -11,14 +10,37 @@ import android.view.View;
 import android.util.Log;
 import android.app.Application;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.lang.System;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.HttpURLConnection;
+import javax.net.ssl.HttpsURLConnection;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.DataOutputStream;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.IOException;
+import java.lang.Exception;
+import java.lang.StringBuffer;
+import java.net.MalformedURLException;
+import java.net.URLEncoder;
 
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.net.NetworkInfo;
+import android.util.Base64;
+
+import org.haxe.lime.HaxeObject;
 
 public class ConnectionManagerExtension extends Extension {
 
+	private static final String TAG = "CME trace hx";
 	public static boolean isConnected () {
 		
 		Log.v("ConnectionManagerExtension", "isConnected");
@@ -39,6 +61,142 @@ public class ConnectionManagerExtension extends Extension {
 			if (activeInfo.getType() == ConnectivityManager.TYPE_MOBILE) return 2;
 		}
 		return 0;
+	}
+
+	public static void getBinary(String requestUrl, int requestId, HaxeObject callbackObject){
+		sendRequest(requestUrl, requestId, callbackObject, true,  null);
+	}
+
+	public static void getText(String requestUrl, int requestId, HaxeObject callbackObject){
+		sendRequest(requestUrl, requestId, callbackObject, false, null);
+	}
+
+	public static void postText(String requestUrl, int requestId, HaxeObject callbackObject, String data){
+		sendRequest(requestUrl, requestId, callbackObject, false, data);
+	}
+
+	private static void sendRequest(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData) {
+		Log.i(TAG, "get url "+requestUrl);
+		Log.i(TAG, "requestId "+requestId);
+
+		try {
+			URL url = new URL(requestUrl);
+			HttpURLConnection connection;
+			if (isHttps(requestUrl)){
+				connection = (HttpsURLConnection) url.openConnection();
+			}
+			else {
+				connection = (HttpURLConnection) url.openConnection();
+			}
+			String result = "";
+			if (postData != null){
+				Log.i(TAG, "is post");
+				int respCode = sendDataForResponse(connection, postData);
+				Log.i(TAG, "post response code "+String.valueOf(respCode));
+				Log.i(TAG , "post response message "+connection.getResponseMessage());
+				if (respCode == HttpURLConnection.HTTP_OK){
+					result = readData(connection, callbackObject, isBinary);
+				}
+				else if (respCode == HttpURLConnection.HTTP_NO_CONTENT){
+					result = "";
+				}
+				else {
+					throw new Exception("CME error sending post, response code is " + respCode);
+				}
+			}
+			else
+			{
+				Log.i(TAG, "is get");
+				result = readData(connection, callbackObject, isBinary);
+			}
+
+			callbackObject.call1("onSuccess_jni", result);
+			connection.disconnect();
+			Log.i(TAG, "success");
+		}
+		catch (IOException e) {
+			Log.i(TAG, "io error " + e.toString());
+			callbackObject.call1("onError_jni", e.toString());
+		}
+		catch (Exception e) {
+			Log.i(TAG, "error " + e.toString());
+			callbackObject.call1("onError_jni", e.toString());
+		}
+	}
+
+	private static int sendDataForResponse(HttpURLConnection connection, String data) throws Exception {
+		int respCode = -1;
+		connection.setRequestMethod("POST");
+		connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		connection.setDoOutput(true);
+		connection.setDoInput(true);
+		connection.connect();
+		OutputStream os = connection.getOutputStream();
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+
+		writer.write(data);
+		writer.flush();
+		writer.close();
+		os.close();
+
+		respCode = connection.getResponseCode();
+
+		return  respCode;
+	}
+
+	private static String readData(HttpURLConnection connection, HaxeObject callbackObject, boolean isBinary) throws Exception{
+		String result;
+		InputStream in = new BufferedInputStream(connection.getInputStream());
+
+		if (isBinary){
+			result = readBinaryStream(in, callbackObject);
+		}
+		else {
+			result = readTextStream(in);
+		}
+
+		in.close();
+
+		return result;
+	}
+
+
+	private static String readBinaryStream(InputStream in, HaxeObject callbackObject) throws Exception{
+
+		byte[] data;
+		int progress = 0;
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		int i;
+		while((i = in.read()) != -1){
+			bo.write((char) i);
+			progress ++;
+			callbackObject.call1("onProgress_jni", progress);
+			//Log.i(TAG, progress + " of " + length + " loaded");
+		}
+
+		data = bo.toByteArray();
+
+		return Base64.encodeToString(data, Base64.NO_PADDING | Base64.NO_WRAP);
+	}
+
+	private static String readTextStream(InputStream in) throws Exception{
+		String data = "";
+
+		StringBuffer sb = new StringBuffer();
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		String i = "";
+		while((i = br.readLine()) != null){
+			sb.append(i);
+		}
+
+		data = sb.toString();
+
+		return data;
+	}
+
+	private static boolean isHttps(String url)
+	{
+		return Pattern.matches("^https:", url);
 	}
 
 
