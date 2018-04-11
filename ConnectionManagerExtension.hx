@@ -14,6 +14,30 @@ import haxe.Json;
 import haxe.crypto.Base64;
 import haxe.io.Bytes;
 
+class Callbacks {
+	private var onSuccess:String -> Void;
+	private var onError:String -> Void;
+	private var onProgress:Int -> Void;
+
+	public function new(onSuccess:String -> Void, onError:String -> Void, ?onProgress:Int -> Void) {
+		this.onSuccess = onSuccess;
+		this.onError = onError;
+		this.onProgress = onProgress;
+	}
+
+	public function onProgress_jni(progress:Int) {
+		if (onProgress != null) onProgress(progress);
+	}
+
+	public function onSuccess_jni(data:String) {
+		onSuccess(data);
+	}
+
+	public function onError_jni(data:String) {
+		onError(data);
+	}
+}
+
 class ConnectionManagerExtension {
 
 
@@ -28,15 +52,13 @@ class ConnectionManagerExtension {
 	private var connectionmanagerextension_getText;
 	private var connectionmanagerextension_getBinary;
 	private var connectionmanagerextension_postJson;
-	#elseif (android && openfl)
-	public var onSuccess_jni:String -> Void;
-	public var onError_jni:String -> Void;
-	public var onProgress_jni:Int -> Void;
+	#elseif (android && openfl)	
 	private var connectionmanagerextension_isConnected_jni:Dynamic;
 	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic;
 	private var connectionmanagerextension_getBinary_jni:Dynamic;
 	private var connectionmanagerextension_getText_jni:Dynamic;
 	private var connectionmanagerextension_postText_jni:Dynamic;
+	private var callbacks:Map<String, Callbacks>;
 	#end
 
 	private function new()
@@ -135,9 +157,7 @@ class ConnectionManagerExtension {
 	{
 		trace("getText",url);
 		#if android
-		onSuccess_jni = onSuccess;
-		onError_jni = onError;
-		connectionmanagerextension_getText_jni(url, requestId, getInstance());
+		connectionmanagerextension_getText_jni(url, requestId, new Callbacks(onSuccess, onError));
 		#elseif ios
 		connectionmanagerextension_getText(url, requestId, onSuccess, onError);
 		#end
@@ -149,10 +169,7 @@ class ConnectionManagerExtension {
 	{
 		trace("getBinary",url);
 		#if android
-		onSuccess_jni = onBinarySuccess.bind(onSuccess);
-		onError_jni = onError;
-		onProgress_jni = onProgress;
-		connectionmanagerextension_getBinary_jni(url, requestId, getInstance());
+		connectionmanagerextension_getBinary_jni(url, requestId, new Callbacks(onBinarySuccess.bind(onSuccess), onError, onProgress));
 		#elseif ios
 		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onError);
 		#end
@@ -164,9 +181,7 @@ class ConnectionManagerExtension {
 	{
 		trace("postText",url,data);
 		#if android
-		onSuccess_jni = onSuccess;
-		onError_jni = onError;
-		connectionmanagerextension_postText_jni(url, requestId, getInstance(), data);
+		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data);
 		#elseif ios
 		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError);
 		requestId += 1;
