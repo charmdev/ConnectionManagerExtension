@@ -125,21 +125,22 @@ public class ConnectionManagerExtension extends Extension {
 		@Override
 		protected void onProgressUpdate(Integer... values) {
 			int progress = values[0];
-			loadingParams.callbackObject.call1("onProgress_jni", progress);
+			if (loadingParams != null) {
+				loadingParams.callbackObject.call1("onProgress_jni", progress);
+			}
 		}
 
 		@Override
 		protected void onPostExecute(String result) {
 			super.onPostExecute(result);
 
-			if (error != null)
-			{
+			if (error != null) {
 				loadingParams.callbackObject.call1("onError_jni", error.toString());
 			}
-			else
-			{
+			else {
 				loadingParams.callbackObject.call1("onSuccess_jni", result);
 			}
+			loadingParams = null;
 		}
 
 		private int sendDataForResponse(HttpURLConnection connection, String data) throws Exception {
