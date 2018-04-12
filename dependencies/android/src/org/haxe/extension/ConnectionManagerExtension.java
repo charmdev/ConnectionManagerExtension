@@ -170,7 +170,9 @@ public class ConnectionManagerExtension extends Extension {
 		while((i = in.read()) != -1){
 			bo.write((char) i);
 			progress ++;
-			callbackObject.call1("onProgress_jni", progress);
+			if (progress % 512 == 0) {
+				callbackObject.call1("onProgress_jni", progress);
+			}
 			//Log.i(TAG, progress + " of " + length + " loaded");
 		}
 
