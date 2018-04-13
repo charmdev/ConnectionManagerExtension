@@ -37,7 +37,10 @@ class CmeHttp
 		{
 			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError);
 		}
+		haxe.Timer.delay(stub, 0);
 	}
+
+	private function stub() {}
 
 	public dynamic function onData(data:String):Void
 	{
