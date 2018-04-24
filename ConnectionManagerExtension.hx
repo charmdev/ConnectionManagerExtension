@@ -14,6 +14,30 @@ import haxe.Json;
 import haxe.crypto.Base64;
 import haxe.io.Bytes;
 
+class Callbacks {
+	private var onSuccess:String -> Void;
+	private var onError:String -> Void;
+	private var onProgress:Int -> Void;
+
+	public function new(onSuccess:String -> Void, onError:String -> Void, ?onProgress:Int -> Void) {
+		this.onSuccess = onSuccess;
+		this.onError = onError;
+		this.onProgress = onProgress;
+	}
+
+	public function onProgress_jni(progress:Int) {
+		if (onProgress != null) onProgress(progress);
+	}
+
+	public function onSuccess_jni(data:String) {
+		onSuccess(data);
+	}
+
+	public function onError_jni(data:String) {
+		onError(data);
+	}
+}
+
 class ConnectionManagerExtension {
 
 
@@ -28,15 +52,13 @@ class ConnectionManagerExtension {
 	private static var connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 4);
 	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", 5);
 	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", 5);
-	#elseif (android && openfl)
-	public var onSuccess_jni:String -> Void;
-	public var onError_jni:String -> Void;
-	public var onProgress_jni:Int -> Void;
+	#elseif (android && openfl)	
 	private var connectionmanagerextension_isConnected_jni:Dynamic;
 	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic;
 	private var connectionmanagerextension_getBinary_jni:Dynamic;
 	private var connectionmanagerextension_getText_jni:Dynamic;
 	private var connectionmanagerextension_postText_jni:Dynamic;
+	private var callbacks:Map<String, Callbacks>;
 	#end
 
 	private function new()
@@ -60,7 +82,7 @@ class ConnectionManagerExtension {
 			connectionmanagerextension_isConnected_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
 			connectionmanagerextension_getActiveConnectionType_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
 			connectionmanagerextension_getBinary_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
-			connectionmanagerextension_getText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
+			connectionmanagerextension_getText_jni = JNI.createStaticMethod("org.haxe.extension.ConnionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
 			connectionmanagerextension_postText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "postText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;Ljava/lang/String;)V");
 		#end
 	}
@@ -128,9 +150,7 @@ class ConnectionManagerExtension {
 	{
 		trace("getText",url);
 		#if android
-		onSuccess_jni = onSuccess;
-		onError_jni = onError;
-		connectionmanagerextension_getText_jni(url, requestId, getInstance());
+		connectionmanagerextension_getText_jni(url, requestId, new Callbacks(onSuccess, onError));
 		#elseif ios
 		connectionmanagerextension_getText(url, requestId, onSuccess, onError);
 		#end
@@ -142,10 +162,7 @@ class ConnectionManagerExtension {
 	{
 		trace('getBinary, URL: $url  id: $requestId');
 		#if android
-		onSuccess_jni = onBinarySuccess.bind(onSuccess);
-		onError_jni = onError;
-		onProgress_jni = onProgress;
-		connectionmanagerextension_getBinary_jni(url, requestId, getInstance());
+		connectionmanagerextension_getBinary_jni(url, requestId, new Callbacks(onBinarySuccess.bind(onSuccess), onError, onProgress));
 		#elseif ios
 		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onProgress, onError);
 		#end
@@ -157,9 +174,7 @@ class ConnectionManagerExtension {
 	{
 		trace("postText",url,data);
 		#if android
-		onSuccess_jni = onSuccess;
-		onError_jni = onError;
-		connectionmanagerextension_postText_jni(url, requestId, getInstance(), data);
+		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data);
 		#elseif ios
 		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError);
 		#end
