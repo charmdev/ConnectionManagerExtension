@@ -184,8 +184,8 @@ class ConnectionManagerExtension {
 		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data);
 		#elseif ios
 		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError);
-		requestId += 1;
 		#end
+		requestId += 1;
 	}
 
 	private function onSuccessImpl (data:String):Void
