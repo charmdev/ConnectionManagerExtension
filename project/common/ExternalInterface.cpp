@@ -18,8 +18,9 @@
 using namespace connectionmanagerextension;
 
 struct Handler {
-  AutoGCRoot* onSuccess;
-  AutoGCRoot* onError;
+    AutoGCRoot* onSuccess;
+    AutoGCRoot* onProgress;
+    AutoGCRoot* onError;
 } ;
 
 std::map<int,Handler> handlers;
@@ -56,15 +57,16 @@ static void connectionmanagerextension_getText (value url, value rId, value onSu
 }
 DEFINE_PRIM (connectionmanagerextension_getText, 4);
 
-static void connectionmanagerextension_getBinary (value url, value rId, value onSuccess, value onError) {
+static void connectionmanagerextension_getBinary (value url, value rId, value onSuccess, value onProgress, value onError) {
 
 	Handler h;
 	h.onSuccess = new AutoGCRoot(onSuccess);
+    h.onProgress = new AutoGCRoot(onProgress);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
 	getBinary(safe_val_string(url), val_int(rId));
 }
-DEFINE_PRIM (connectionmanagerextension_getBinary, 4);
+DEFINE_PRIM (connectionmanagerextension_getBinary, 5);
 
 static void connectionmanagerextension_postJson (value url, value data, value rId, value onSuccess, value onError) {
 
@@ -102,6 +104,22 @@ extern "C" void runBinaryEvent (int id, const char* data)
 		handlers.erase(id);
 	}
 }
+
+extern "C" void runBinaryErrorEvent (int id, const char* data)
+{
+    if (handlers.find(id) != handlers.end()) {
+        val_call1(handlers[id].onError->get(), safe_alloc_string(data));
+        handlers.erase(id);
+    }
+}
+
+extern "C" void runBinaryProgressEvent (int id, int bytes)
+{
+    if (handlers.find(id) != handlers.end()) {
+        val_call1(handlers[id].onProgress->get(), alloc_int(bytes));
+    }
+}
+
 extern "C" void runPostJsonEvent(int id, const char* data)
 {
 	if (handlers.find(id) != handlers.end()) {

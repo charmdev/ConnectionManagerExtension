@@ -4,6 +4,8 @@
 
 extern "C" void runEvent(int id, const char* data);
 extern "C" void runBinaryEvent(int id, const char* data);
+//extern "C" void runBinaryErrorEvent(int id, const char* data);
+extern "C" void runBinaryProgressEvent (int id, int bytes);
 extern "C" void runPostJsonEvent(int id, const char* data);
 extern "C" void runConnectionCallback(int);
 
@@ -103,7 +105,9 @@ extern "C" void runConnectionCallback(int);
 
 @end
 
-@interface HttpConnection:NSObject
+@interface HttpConnection: NSObject <NSURLSessionDelegate>
+@property(nonatomic, assign) NSMutableDictionary *mapIds;
+
 +(HttpConnection *) getInstance;
 
 -(void)getText:(NSString*)url withId:(int)id;
@@ -111,6 +115,8 @@ extern "C" void runConnectionCallback(int);
 @end
 
 @implementation HttpConnection
+@synthesize mapIds;
+
 +(HttpConnection *)getInstance
 {
 	static HttpConnection *instance;
@@ -127,7 +133,7 @@ extern "C" void runConnectionCallback(int);
 {
 	if( self == [super init])
 	{
-
+        mapIds = [[NSMutableDictionary alloc] init];
 	}
 	return self;
 }
@@ -148,30 +154,61 @@ extern "C" void runConnectionCallback(int);
 }
 -(void)getBinary:(NSString*)url withId:(int)id
 {
+    //NSLog(@"Download start, requestId: %i", id);
     NSURL *nurl = [NSURL URLWithString:url];
-
-    NSURLSessionTask *downloadTask = [[NSURLSession sharedSession]
-      downloadTaskWithURL:nurl completionHandler:^(NSURL *data, NSURLResponse *response, NSError *error) {
-      	NSLog(@"connectionmanagerextension getBinary completionHandler");
-      	NSData *ddata = [NSData dataWithContentsOfURL: data];
-      	NSString *strData = [[NSString alloc]initWithData:ddata encoding:NSUTF8StringEncoding];
-      	if (strData == nil) {
-      		NSString *encodedString = [ddata base64Encoding];
-
-			[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-				runBinaryEvent(id, [encodedString UTF8String]);
-			}];
-      	} else {
-      		[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-				runEvent(id, [strData UTF8String]);
-			}];
-      	}
-
-
-
-    }];
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
+    NSURLSessionTask *downloadTask = [session downloadTaskWithURL:nurl];
+    //self.mapIds[@(id)] = downloadTask;
+    
+    NSString *strX = [NSString stringWithFormat:@"%i", id];
+    [mapIds setObject:downloadTask forKey:strX];
+    
     [downloadTask resume];
 }
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
+    
+    int requestId = [self getRequestIdByTask:downloadTask];
+    //NSLog(@"Download complete, requestId: %i", requestId);
+    
+    NSData *ddata = [NSData dataWithContentsOfURL: location];
+    NSString *strData = [[NSString alloc]initWithData:ddata encoding:NSUTF8StringEncoding];
+    if (strData == nil) {
+        NSString *encodedString = [ddata base64Encoding];
+        
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+            runBinaryEvent(requestId, [encodedString UTF8String]);  // todo ids not zero
+        }];
+    } else {
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+            runEvent(requestId, [strData UTF8String]);
+        }];
+    }
+    //self.downloadTask = nil;
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
+{
+    int requestId = [self getRequestIdByTask:downloadTask];
+    
+    double progress = (double)totalBytesWritten / (double)totalBytesExpectedToWrite;
+    NSLog(@"download requestId: %i progress: %f", requestId, progress);
+    
+    runBinaryProgressEvent(requestId, (int)totalBytesWritten);
+}
+
+/*
+ - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+ {
+     if (error) {
+        NSLog(@"URLSession error: %@ - %@", task, error);
+     } else {
+        NSLog(@"URLSession success: %@", task);
+     }
+ }
+ */
+
 -(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id
 {
     NSURL *nurl = [NSURL URLWithString:url];
@@ -196,6 +233,14 @@ extern "C" void runConnectionCallback(int);
    [uploadTask resume];
 
 }
+
+-(int)getRequestIdByTask:(NSURLSessionDownloadTask*)downloadTask
+{
+    NSArray *arr = [mapIds allKeysForObject:downloadTask];
+    NSString *key = [arr objectAtIndex:0];
+    return [key intValue];
+}
+
 @end
 
 namespace connectionmanagerextension {
