@@ -165,7 +165,7 @@ class ConnectionManagerExtension {
 	}
 
 	@:allow(CmeHttp)
-	private function getBinary (url:String, onSuccess:String -> Void, onError:String -> Void, onProgress:Int -> Void):Void
+	private function getBinary (url:String, onSuccess:Bytes -> Void, onError:String -> Void, onProgress:Int -> Void):Void
 	{
 		trace("getBinary",url);
 		#if android
@@ -198,13 +198,12 @@ class ConnectionManagerExtension {
 		trace("hx serror!!!");
 	}
 
-	private function onBinarySuccess (onSuccess:String -> Void, data:String):Void
+	private function onBinarySuccess (onSuccess:Bytes -> Void, data:String):Void
 	{
 		try
 		{
 			var decoded:Bytes = Base64.decode(data);
-			var content:String = decoded.toString();
-			onSuccess(content);
+			onSuccess(decoded);
 		}
 		catch (e:Dynamic)
 		{
