@@ -46,12 +46,12 @@ class ConnectionManagerExtension {
 	private static var instance:ConnectionManagerExtension;
 
 	#if ios
-	private var connectionmanagerextension_isConnected;
-	private var connectionmanagerextension_getActiveConnectionType;
-	private var connectionmanagerextension_connectionStatusCallback;
-	private var connectionmanagerextension_getText;
-	private var connectionmanagerextension_getBinary;
-	private var connectionmanagerextension_postJson;
+	private static var connectionmanagerextension_isConnected = Lib.load("connectionmanagerextension", "connectionmanagerextension_isConnected", 0);
+	private static var connectionmanagerextension_getActiveConnectionType = Lib.load("connectionmanagerextension", "connectionmanagerextension_getActiveConnectionType", 0);
+	private static var connectionmanagerextension_connectionStatusCallback = Lib.load("connectionmanagerextension", "connectionmanagerextension_connectionStatusCallback", 1);
+	private static var connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 4);
+	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", 5);
+	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", 5);
 	#elseif (android && openfl)	
 	private var connectionmanagerextension_isConnected_jni:Dynamic;
 	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic;
@@ -78,19 +78,12 @@ class ConnectionManagerExtension {
 
 	private function init():Void
 	{
-		#if ios
-		connectionmanagerextension_isConnected = Lib.load("connectionmanagerextension", "connectionmanagerextension_isConnected", 0);
-		connectionmanagerextension_getActiveConnectionType = Lib.load("connectionmanagerextension", "connectionmanagerextension_getActiveConnectionType", 0);
-		connectionmanagerextension_connectionStatusCallback = Lib.load("connectionmanagerextension", "connectionmanagerextension_connectionStatusCallback", 1);
-		connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 4);
-		connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", 4);
-		connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", 5);
-		#elseif (android && openfl)
-		connectionmanagerextension_isConnected_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
-		connectionmanagerextension_getActiveConnectionType_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
-		connectionmanagerextension_getBinary_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
-		connectionmanagerextension_getText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
-		connectionmanagerextension_postText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "postText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;Ljava/lang/String;)V");
+		#if (android && openfl)
+			connectionmanagerextension_isConnected_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
+			connectionmanagerextension_getActiveConnectionType_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
+			connectionmanagerextension_getBinary_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
+			connectionmanagerextension_getText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;)V");
+			connectionmanagerextension_postText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "postText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;Ljava/lang/String;)V");
 		#end
 	}
 
@@ -165,13 +158,13 @@ class ConnectionManagerExtension {
 	}
 
 	@:allow(CmeHttp)
-	private function getBinary (url:String, onSuccess:String -> Void, onError:String -> Void, onProgress:Int -> Void):Void
+	private function getBinary (url:String, onSuccess:Bytes -> Void, onError:String -> Void, onProgress:Int -> Void):Void
 	{
-		trace("getBinary",url);
+		trace('getBinary, URL: $url  id: $requestId');
 		#if android
 		connectionmanagerextension_getBinary_jni(url, requestId, new Callbacks(onBinarySuccess.bind(onSuccess), onError, onProgress));
 		#elseif ios
-		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onError);
+		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onProgress, onError);
 		#end
 		requestId += 1;
 	}
@@ -184,8 +177,8 @@ class ConnectionManagerExtension {
 		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data);
 		#elseif ios
 		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError);
-		requestId += 1;
 		#end
+		requestId += 1;
 	}
 
 	private function onSuccessImpl (data:String):Void
@@ -198,13 +191,12 @@ class ConnectionManagerExtension {
 		trace("hx serror!!!");
 	}
 
-	private function onBinarySuccess (onSuccess:String -> Void, data:String):Void
+	private function onBinarySuccess (onSuccess:Bytes -> Void, data:String):Void
 	{
 		try
 		{
 			var decoded:Bytes = Base64.decode(data);
-			var content:String = decoded.toString();
-			onSuccess(content);
+			onSuccess(decoded);
 		}
 		catch (e:Dynamic)
 		{

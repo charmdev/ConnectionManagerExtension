@@ -30,11 +30,12 @@ class CmeHttp
 			}
 			else
 			{
-				ConnectionManagerExtension.getInstance().getBinary(url, onData, onError, onProgress);
+				ConnectionManagerExtension.getInstance().getBinary(url, onBinaryData, onError, onProgress);
 			}
 		}
 		else
 		{
+			trace('CmeHttp postData: $postData');
 			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError);
 		}
 		haxe.Timer.delay(stub, 0);
@@ -43,6 +44,11 @@ class CmeHttp
 	private function stub() {}
 
 	public dynamic function onData(data:String):Void
+	{
+
+	}
+
+	public dynamic function onBinaryData(data:haxe.io.Bytes):Void
 	{
 
 	}
