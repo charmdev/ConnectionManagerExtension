@@ -145,11 +145,10 @@ extern "C" void runConnectionCallback(int);
       dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
       	NSLog(@"connectionmanagerextension getText completionHandler");
       	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
-      	NSString *strError = [[NSString alloc]initWithData:error encoding:NSUTF8StringEncoding];
       	if(error)
       	{
       	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                    	runBinaryErrorEvent(id, [strError UTF8String]);
+                    	runBinaryErrorEvent(id, error);
                     }];
       	}
       	else
@@ -234,11 +233,10 @@ extern "C" void runConnectionCallback(int);
  NSURLSessionUploadTask *uploadTask = [session uploadTaskWithRequest:request
    fromData:dictionary completionHandler:^(NSData *pdata,NSURLResponse *response,NSError *error) {
 		NSString *strData = [[NSString alloc]initWithData:pdata encoding:NSUTF8StringEncoding];
-		NSString *strError = [[NSString alloc]initWithData:error encoding:NSUTF8StringEncoding];
         if(error)
         {
             [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                    	runBinaryErrorEvent(id, [strError UTF8String]);
+                    	runBinaryErrorEvent(id, error);
                     }];
         }
         else
