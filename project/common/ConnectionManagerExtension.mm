@@ -148,7 +148,7 @@ extern "C" void runConnectionCallback(int);
       	if(error)
       	{
       	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                    	runBinaryErrorEvent(id, [error localizedDescription]);
+                    	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
                     }];
       	}
       	else
@@ -236,7 +236,7 @@ extern "C" void runConnectionCallback(int);
         if(error)
         {
             [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                    	runBinaryErrorEvent(id, [error localizedDescription]);
+                    	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
                     }];
         }
         else
