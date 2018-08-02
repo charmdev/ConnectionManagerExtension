@@ -149,7 +149,7 @@ extern "C" void runConnectionCallback(int);
       	if(error)
       	{
       	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                    	runBinaryErrorEvent(id, strError);
+                    	runBinaryErrorEvent(id, [strError UTF8String]);
                     }];
       	}
       	else
@@ -234,9 +234,20 @@ extern "C" void runConnectionCallback(int);
  NSURLSessionUploadTask *uploadTask = [session uploadTaskWithRequest:request
    fromData:dictionary completionHandler:^(NSData *pdata,NSURLResponse *response,NSError *error) {
 		NSString *strData = [[NSString alloc]initWithData:pdata encoding:NSUTF8StringEncoding];
-		[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-			runPostJsonEvent(id, [strData UTF8String]);
-		}];
+		NSString *strError = [[NSString alloc]initWithData:error encoding:NSUTF8StringEncoding];
+        if(error)
+        {
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                    	runBinaryErrorEvent(id, [strError UTF8String]);
+                    }];
+        }
+        else
+        {
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+            			runPostJsonEvent(id, [strData UTF8String]);
+            		}];
+        }
+
    }];
 
    [uploadTask resume];
