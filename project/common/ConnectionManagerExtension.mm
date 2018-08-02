@@ -4,7 +4,7 @@
 
 extern "C" void runEvent(int id, const char* data);
 extern "C" void runBinaryEvent(int id, const char* data);
-//extern "C" void runBinaryErrorEvent(int id, const char* data);
+extern "C" void runBinaryErrorEvent(int id, const char* data);
 extern "C" void runBinaryProgressEvent (int id, int bytes);
 extern "C" void runPostJsonEvent(int id, const char* data);
 extern "C" void runConnectionCallback(int);
@@ -145,10 +145,19 @@ extern "C" void runConnectionCallback(int);
       dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
       	NSLog(@"connectionmanagerextension getText completionHandler");
       	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
-      	[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-        	runEvent(id, [strData UTF8String]);
-        }];
-
+      	NSString *strError = [[NSString alloc]initWithData:error encoding:NSUTF8StringEncoding];
+      	if(error)
+      	{
+      	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                    	runBinaryErrorEvent(id, strError);
+                    }];
+      	}
+      	else
+      	{
+      	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                	runEvent(id, [strData UTF8String]);
+                }];
+      	}
     }];
     [downloadTask resume];
 }
