@@ -212,7 +212,7 @@ extern "C" void runConnectionCallback(int);
      if (error) {
         NSLog(@"URLSession error: %@ - %@", task, error);
         [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-                            	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
+                            	runBinaryErrorEvent(requestId, [[error localizedDescription] UTF8String]);
                             }];
      } else {
         NSLog(@"URLSession success: %@", task);
