@@ -206,16 +206,18 @@ extern "C" void runConnectionCallback(int);
     runBinaryProgressEvent(requestId, (int)totalBytesWritten);
 }
 
-/*
  - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
  {
+     int requestId = [self getRequestIdByTask:task];
      if (error) {
         NSLog(@"URLSession error: %@ - %@", task, error);
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                            	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
+                            }];
      } else {
         NSLog(@"URLSession success: %@", task);
      }
  }
- */
 
 -(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id
 {
@@ -252,9 +254,9 @@ extern "C" void runConnectionCallback(int);
 
 }
 
--(int)getRequestIdByTask:(NSURLSessionDownloadTask*)downloadTask
+-(int)getRequestIdByTask:(NSURLSessionTask*)task
 {
-    NSArray *arr = [mapIds allKeysForObject:downloadTask];
+    NSArray *arr = [mapIds allKeysForObject:task];
     NSString *key = [arr objectAtIndex:0];
     return [key intValue];
 }
