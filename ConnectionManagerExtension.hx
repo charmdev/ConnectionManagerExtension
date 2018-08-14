@@ -134,7 +134,6 @@ class ConnectionManagerExtension {
 
 	public function connectionStatusCallback (callback:ConnectionType -> Void):Void
 	{
-		trace("connectionStatusCallback");
 		#if ios
 		connectionmanagerextension_connectionStatusCallback(onConnectionChanged.bind(callback));
 		#end
@@ -148,7 +147,6 @@ class ConnectionManagerExtension {
 	@:allow(CmeHttp)
 	private function getText (url:String, onSuccess:String -> Void, onError:String -> Void):Void
 	{
-		trace("getText",url);
 		#if android
 		connectionmanagerextension_getText_jni(url, requestId, new Callbacks(onSuccess, onError));
 		#elseif ios
@@ -160,7 +158,6 @@ class ConnectionManagerExtension {
 	@:allow(CmeHttp)
 	private function getBinary (url:String, onSuccess:Bytes -> Void, onError:String -> Void, onProgress:Int -> Void):Void
 	{
-		trace('getBinary, URL: $url  id: $requestId');
 		#if android
 		connectionmanagerextension_getBinary_jni(url, requestId, new Callbacks(onBinarySuccess.bind(onSuccess), onError, onProgress));
 		#elseif ios
@@ -172,7 +169,6 @@ class ConnectionManagerExtension {
 	@:allow(CmeHttp)
 	private function postText (url:String, data:String, onSuccess:String -> Void, onError:String -> Void):Void
 	{
-		trace("postText",url,data);
 		#if android
 		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data);
 		#elseif ios
@@ -183,12 +179,10 @@ class ConnectionManagerExtension {
 
 	private function onSuccessImpl (data:String):Void
 	{
-		trace('hx success!!! ${data}');
 	}
 
 	private function onErrorImpl (error:String):Void
 	{
-		trace("hx serror!!!");
 	}
 
 	private function onBinarySuccess (onSuccess:Bytes -> Void, data:String):Void
@@ -200,7 +194,7 @@ class ConnectionManagerExtension {
 		}
 		catch (e:Dynamic)
 		{
-			trace('error! ${e}');
+			
 		}
 	}
 }
