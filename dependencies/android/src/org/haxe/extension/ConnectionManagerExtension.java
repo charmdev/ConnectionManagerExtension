@@ -85,6 +85,8 @@ public class ConnectionManagerExtension extends Extension {
 				else {
 					connection = (HttpURLConnection) url.openConnection();
 				}
+				connection.setConnectTimeout(5000);
+				connection.setReadTimeout(30000);
 				
 				if (loadingParams.postData != null){
 					Log.i(TAG, "is post");
