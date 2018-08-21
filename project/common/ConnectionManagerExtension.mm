@@ -4,7 +4,7 @@
 
 extern "C" void runEvent(int id, const char* data);
 extern "C" void runBinaryEvent(int id, const char* data);
-//extern "C" void runBinaryErrorEvent(int id, const char* data);
+extern "C" void runBinaryErrorEvent(int id, const char* data);
 extern "C" void runBinaryProgressEvent (int id, int bytes);
 extern "C" void runPostJsonEvent(int id, const char* data);
 extern "C" void runConnectionCallback(int);
@@ -145,10 +145,18 @@ extern "C" void runConnectionCallback(int);
       dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
       	NSLog(@"connectionmanagerextension getText completionHandler");
       	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
-      	[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-        	runEvent(id, [strData UTF8String]);
-        }];
-
+      	if(error)
+      	{
+      	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                    	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
+                    }];
+      	}
+      	else
+      	{
+      	    [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                	runEvent(id, [strData UTF8String]);
+                }];
+      	}
     }];
     [downloadTask resume];
 }
@@ -198,16 +206,18 @@ extern "C" void runConnectionCallback(int);
     runBinaryProgressEvent(requestId, (int)totalBytesWritten);
 }
 
-/*
  - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
  {
+     int requestId = [self getRequestIdByTask:task];
      if (error) {
         NSLog(@"URLSession error: %@ - %@", task, error);
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                            	runBinaryErrorEvent(requestId, [[error localizedDescription] UTF8String]);
+                            }];
      } else {
         NSLog(@"URLSession success: %@", task);
      }
  }
- */
 
 -(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id
 {
@@ -225,18 +235,28 @@ extern "C" void runConnectionCallback(int);
  NSURLSessionUploadTask *uploadTask = [session uploadTaskWithRequest:request
    fromData:dictionary completionHandler:^(NSData *pdata,NSURLResponse *response,NSError *error) {
 		NSString *strData = [[NSString alloc]initWithData:pdata encoding:NSUTF8StringEncoding];
-		[[NSOperationQueue mainQueue] addOperationWithBlock:^ {
-			runPostJsonEvent(id, [strData UTF8String]);
-		}];
+        if(error)
+        {
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+                    	runBinaryErrorEvent(id, [[error localizedDescription] UTF8String]);
+                    }];
+        }
+        else
+        {
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^ {
+            			runPostJsonEvent(id, [strData UTF8String]);
+            		}];
+        }
+
    }];
 
    [uploadTask resume];
 
 }
 
--(int)getRequestIdByTask:(NSURLSessionDownloadTask*)downloadTask
+-(int)getRequestIdByTask:(NSURLSessionTask*)task
 {
-    NSArray *arr = [mapIds allKeysForObject:downloadTask];
+    NSArray *arr = [mapIds allKeysForObject:task];
     NSString *key = [arr objectAtIndex:0];
     return [key intValue];
 }

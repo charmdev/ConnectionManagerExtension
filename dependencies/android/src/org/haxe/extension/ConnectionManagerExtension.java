@@ -225,7 +225,7 @@ public class ConnectionManagerExtension extends Extension {
 
 	private static final String TAG = "CME trace hx";
 	public static boolean isConnected () {
-		
+
 		Log.v("ConnectionManagerExtension", "isConnected");
 		int r = ConnectionManagerExtension.getActiveConnectionType();
 		return r != 0;

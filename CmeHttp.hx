@@ -35,7 +35,6 @@ class CmeHttp
 		}
 		else
 		{
-			trace('CmeHttp postData: $postData');
 			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError);
 		}
 		haxe.Timer.delay(stub, 0);
