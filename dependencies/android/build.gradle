@@ -22,6 +22,6 @@ android {
 }
 
 dependencies {
-    compile project(':deps:extension-api')
+    api project(':deps:extension-api')
     implementation 'com.android.support:support-v4:[23,24)'
 }
