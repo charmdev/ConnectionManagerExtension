@@ -40,12 +40,12 @@ static value connectionmanagerextension_getActiveConnectionType () {
 }
 DEFINE_PRIM (connectionmanagerextension_getActiveConnectionType, 0);
 
-static void connectionmanagerextension_connectionStatusCallback (value callback) {
+/*static void connectionmanagerextension_connectionStatusCallback (value callback) {
 
 	connectionCallback = new AutoGCRoot(callback);
 	connectionStatusCallbackSet();
 }
-DEFINE_PRIM (connectionmanagerextension_connectionStatusCallback, 1);
+DEFINE_PRIM (connectionmanagerextension_connectionStatusCallback, 1);*/
 
 static void connectionmanagerextension_getText (value url, value rId, value onSuccess, value onError) {
 
