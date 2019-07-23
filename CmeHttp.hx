@@ -37,7 +37,7 @@ class CmeHttp
 		{
 			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError);
 		}
-		haxe.Timer.delay(stub, 0);
+		haxe.Timer.delay(stub, 16);
 	}
 
 	private function stub() {}
