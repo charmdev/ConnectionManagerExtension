@@ -1,5 +1,5 @@
 # ConnectionManagerExtension
-Extension for OpenFl to check connection status (iOs, Android)
+Extension OpenFl/NME for networking using Android and IOS SDK.
 
 Additional: load/post data on iOS using `NSURLSession` class 
 
@@ -8,8 +8,8 @@ Usage:
 
 `ConnectionManagerExtension.getConnectionType()` - Get the type of the active connection (NONE / WIFI / MOBILE)
 
-`ConnectionManagerExtension.getText(url:String, onSuccess:String -> Void, onError:String -> Void)` - iOS only. Load text data from url, using `NSURLSession` class
+`ConnectionManagerExtension.getText(url:String, onSuccess:String -> Void, onError:String -> Void)` - Load text data from url.
 
-`ConnectionManagerExtension.getBinary(url:String, onSuccess:String -> Void, onError:String -> Void)` - iOS only. Load binary data from url, using `NSURLSession` class
+`ConnectionManagerExtension.getBinary(url:String, onSuccess:String -> Void, onError:String -> Void)` - Load binary data from url.
 
-`ConnectionManagerExtension.postJson(url:String, data:Dynamic, onSuccess:String -> Void, onError:String -> Void)` - iOS only. Post data (JSON mainly) to url, using `NSURLSession` class
+`ConnectionManagerExtension.postJson(url:String, data:Dynamic, onSuccess:String -> Void, onError:String -> Void)` - Post data (JSON mainly) to url.
