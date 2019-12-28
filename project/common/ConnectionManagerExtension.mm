@@ -109,9 +109,10 @@ extern "C" void runConnectionCallback(int);
 @property(nonatomic, assign) NSMutableDictionary *mapIds;
 
 +(HttpConnection *) getInstance;
-
--(void)getText:(NSString*)url withId:(int)id;
--(void)getBinary:(NSString*)url withId:(int)id;
+#ifdef __cplusplus
+-(void)getText:(NSString*)url withId:(int)id withHeaders:(std::vector<std::string>&)headers;
+-(void)getBinary:(NSString*)url withId:(int)id;// withHeaders:(NSArray*)headers;
+#endif
 @end
 
 @implementation HttpConnection
@@ -137,12 +138,28 @@ extern "C" void runConnectionCallback(int);
 	}
 	return self;
 }
--(void)getText:(NSString*)url withId:(int)id
+
+/*-(void)addHeaders:(NSArray*)headers toRequest:(NSMutableURLRequest*)request
 {
+    NSLog(@"headaers count %i", [headers count]);
+    for (int i = 0; i < [headers count]; i += 2)
+    {
+        NSLog(@"add header: %i : %f", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:1]);
+        [request addValue:[headers objectAtIndex:(i + 1)] forHTTPHeaderField:[headers objectAtIndex:1]];
+    }
+}*/
+
+-(void)getText:(NSString*)url withId:(int)id withHeaders:(std::vector<std::string>&)headers
+{
+    NSLog(@"connectionmanagerextension getText");
     NSURL *nurl = [NSURL URLWithString:url];
 
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:nurl];
+    request.HTTPMethod = @"GET";
+    //[self addHeaders:headers toRequest:request];
+
     NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession]
-      dataTaskWithURL:nurl completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+      dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
       	NSLog(@"connectionmanagerextension getText completionHandler");
       	NSString *strData = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
       	if(error)
@@ -160,13 +177,18 @@ extern "C" void runConnectionCallback(int);
     }];
     [downloadTask resume];
 }
--(void)getBinary:(NSString*)url withId:(int)id
+-(void)getBinary:(NSString*)url withId:(int)id //withHeaders:(NSArray*)headers
 {
     //NSLog(@"Download start, requestId: %i", id);
     NSURL *nurl = [NSURL URLWithString:url];
+
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:nurl];
+    request.HTTPMethod = @"GET";
+    //[self addHeaders:headers toRequest:request];
+
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
-    NSURLSessionTask *downloadTask = [session downloadTaskWithURL:nurl];
+    NSURLSessionTask *downloadTask = [session downloadTaskWithRequest:request];
     //self.mapIds[@(id)] = downloadTask;
     
     NSString *strX = [NSString stringWithFormat:@"%i", id];
@@ -219,7 +241,7 @@ extern "C" void runConnectionCallback(int);
      }
  }
 
--(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id
+-(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id //withHeaders:(NSArray*)headers
 {
     NSURL *nurl = [NSURL URLWithString:url];
 
@@ -229,6 +251,8 @@ extern "C" void runConnectionCallback(int);
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:nurl];
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/json; charset=UTF-8" forHTTPHeaderField:@"Content-Type"];
+
+    //[self addHeaders:headers toRequest:request];
 
 	NSData *dictionary = [data dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
 
