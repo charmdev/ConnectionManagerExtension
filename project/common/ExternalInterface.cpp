@@ -54,24 +54,28 @@ DEFINE_PRIM (connectionmanagerextension_getActiveConnectionType, 0);
 }
 DEFINE_PRIM (connectionmanagerextension_connectionStatusCallback, 1);*/
 
+static std::vector<std::string> valToVector(value vals) {
+    int array_size = val_array_size(vals);
+    std::vector<std::string> vector_c;
+    for (int i=0; i < array_size; i++) {
+        vector_c.push_back(safe_val_string(val_array_i(vals, i)));
+    }
+    std::cout << "----------> VECTOR SIZE "<<std::to_string(vector_c.size())<<"\n";
+    return vector_c;
+}
+
 static void connectionmanagerextension_getText (value url, value rId, value onSuccess, value onError, value headers) {
 
 	Handler h;
 	h.onSuccess = new AutoGCRoot(onSuccess);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	std::cout << "----------> trace ok\n";
 	int array_size = val_array_size(headers);
-	std::vector<std::string> headers_c;
-	for (int i=0; i < array_size; i++) {
-        headers_c.push_back(safe_val_string(val_array_i(headers, i)));
-    }
-    std::cout << "----------> trace okkkk\n";
+	std::vector<std::string> headers_c = valToVector(headers);
 	getText(safe_val_string(url), val_int(rId), headers_c);
 }
 DEFINE_PRIM (connectionmanagerextension_getText, 5);
 
-//static void connectionmanagerextension_getBinary (value url, value rId, value onSuccess, value onProgress, value onError, value headers) {
 static void connectionmanagerextension_getBinary (value *args, int argsCount) {
     value url = args[0];
     value rId = args[1];
@@ -84,11 +88,11 @@ static void connectionmanagerextension_getBinary (value *args, int argsCount) {
     h.onProgress = new AutoGCRoot(onProgress);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	getBinary(safe_val_string(url), val_int(rId));
+	std::vector<std::string> headers_c = valToVector(headers);
+	getBinary(safe_val_string(url), val_int(rId), headers_c);
 }
 DEFINE_PRIM_MULT(connectionmanagerextension_getBinary);
 
-//static void connectionmanagerextension_postJson (value url, value data, value rId, value onSuccess, value onError, value headers) {
 static void connectionmanagerextension_postJson (value *args, int argsCount) {
     value url = args[0];
     value data = args[1];
@@ -100,7 +104,8 @@ static void connectionmanagerextension_postJson (value *args, int argsCount) {
 	h.onSuccess = new AutoGCRoot(onSuccess);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	postJson(safe_val_string(url), safe_val_string(data), val_int(rId));
+	std::vector<std::string> headers_c = valToVector(headers);
+	postJson(safe_val_string(url), safe_val_string(data), val_int(rId), headers_c);
 }
 DEFINE_PRIM_MULT(connectionmanagerextension_postJson);
 

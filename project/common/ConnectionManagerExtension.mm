@@ -109,10 +109,8 @@ extern "C" void runConnectionCallback(int);
 @property(nonatomic, assign) NSMutableDictionary *mapIds;
 
 +(HttpConnection *) getInstance;
-#ifdef __cplusplus
--(void)getText:(NSString*)url withId:(int)id withHeaders:(std::vector<std::string>&)headers;
+-(void)getText:(NSString*)url withId:(int)id withHeaders:(NSMutableArray*)headers;
 -(void)getBinary:(NSString*)url withId:(int)id;// withHeaders:(NSArray*)headers;
-#endif
 @end
 
 @implementation HttpConnection
@@ -139,7 +137,7 @@ extern "C" void runConnectionCallback(int);
 	return self;
 }
 
-/*-(void)addHeaders:(NSArray*)headers toRequest:(NSMutableURLRequest*)request
+-(void)addHeaders:(NSArray*)headers toRequest:(NSMutableURLRequest*)request
 {
     NSLog(@"headaers count %i", [headers count]);
     for (int i = 0; i < [headers count]; i += 2)
@@ -147,16 +145,16 @@ extern "C" void runConnectionCallback(int);
         NSLog(@"add header: %i : %f", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:1]);
         [request addValue:[headers objectAtIndex:(i + 1)] forHTTPHeaderField:[headers objectAtIndex:1]];
     }
-}*/
+}
 
--(void)getText:(NSString*)url withId:(int)id withHeaders:(std::vector<std::string>&)headers
+-(void)getText:(NSString*)url withId:(int)id withHeaders:(NSMutableArray*)headers
 {
     NSLog(@"connectionmanagerextension getText");
     NSURL *nurl = [NSURL URLWithString:url];
 
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:nurl];
     request.HTTPMethod = @"GET";
-    //[self addHeaders:headers toRequest:request];
+    [self addHeaders:headers toRequest:request];
 
     NSURLSessionDataTask *downloadTask = [[NSURLSession sharedSession]
       dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -177,14 +175,14 @@ extern "C" void runConnectionCallback(int);
     }];
     [downloadTask resume];
 }
--(void)getBinary:(NSString*)url withId:(int)id //withHeaders:(NSArray*)headers
+-(void)getBinary:(NSString*)url withId:(int)id withHeaders:(NSMutableArray*)headers
 {
     //NSLog(@"Download start, requestId: %i", id);
     NSURL *nurl = [NSURL URLWithString:url];
 
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:nurl];
     request.HTTPMethod = @"GET";
-    //[self addHeaders:headers toRequest:request];
+    [self addHeaders:headers toRequest:request];
 
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
@@ -241,7 +239,7 @@ extern "C" void runConnectionCallback(int);
      }
  }
 
--(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id //withHeaders:(NSArray*)headers
+-(void)postJson:(NSString*)url withData:(NSString*)data withId:(int)id withHeaders:(NSMutableArray*)headers
 {
     NSURL *nurl = [NSURL URLWithString:url];
 
@@ -252,7 +250,7 @@ extern "C" void runConnectionCallback(int);
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/json; charset=UTF-8" forHTTPHeaderField:@"Content-Type"];
 
-    //[self addHeaders:headers toRequest:request];
+    [self addHeaders:headers toRequest:request];
 
 	NSData *dictionary = [data dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
 
@@ -289,6 +287,15 @@ extern "C" void runConnectionCallback(int);
 
 namespace connectionmanagerextension {
 
+	NSMutableArray* vectorToArray(std::vector<std::string> strings) {
+	    id nsstrings = [NSMutableArray new];
+    	std::for_each(strings.begin(), strings.end(), ^(std::string str) {
+    		id nsstr = [NSString stringWithUTF8String:str.c_str()];
+    		[nsstrings addObject:nsstr];
+    	});
+        return nsstrings;
+	}
+
 	bool isConnected() {
 		NSLog(@"connectionmanagerextension isConnected");
 		bool result = [[NetworkInfos getInstance] isConnected];
@@ -302,21 +309,23 @@ namespace connectionmanagerextension {
     void connectionStatusCallbackSet () {
     	[[NetworkInfos getInstance] connectionStatusCallbackSet];
     }
-    void getText (std::string url, int rId) {
+    void getText (std::string url, int rId, std::vector<std::string> headers) {
     	NSLog(@"connectionmanagerextension getText");
     	NSString* nsurl = [[NSString alloc] initWithUTF8String:url.c_str()];
-		[[HttpConnection getInstance] getText:nsurl withId:rId];
+    	NSMutableArray* nsheaders = vectorToArray(headers);
+		[[HttpConnection getInstance] getText:nsurl withId:rId withHeaders:nsheaders];
     }
-	void getBinary(std::string url, int rId) {
+	void getBinary(std::string url, int rId, std::vector<std::string> headers) {
 		NSLog(@"connectionmanagerextension getBinary");
 		NSString* nsurl = [[NSString alloc] initWithUTF8String:url.c_str()];
-		[[HttpConnection getInstance] getBinary:nsurl withId:rId];
+		NSMutableArray* nsheaders = vectorToArray(headers);
+		[[HttpConnection getInstance] getBinary:nsurl withId:rId withHeaders:nsheaders];
 	}
-	void postJson(std::string url, std::string data, int rId) {
+	void postJson(std::string url, std::string data, int rId, std::vector<std::string> headers) {
 		NSLog(@"connectionmanagerextension postJson");
 		NSString* nsurl = [[NSString alloc] initWithUTF8String:url.c_str()];
 		NSString* ndata = [[NSString alloc] initWithUTF8String:data.c_str()];
-		[[HttpConnection getInstance] postJson:nsurl withData:ndata withId:rId];
+		NSMutableArray* nsheaders = vectorToArray(headers);
+		[[HttpConnection getInstance] postJson:nsurl withData:ndata withId:rId withHeaders:nsheaders];
 	}
-	
 }
