@@ -30,7 +30,7 @@ class CmeHttp
 	}
 
 	public function request(?post:Bool):Void {
-        trace('------------------------------> CME REQUEST HEADERS ${headers}');
+
 		if (!post)
 		{
 			if (!this.isBinary)

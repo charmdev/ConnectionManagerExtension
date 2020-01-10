@@ -139,10 +139,10 @@ extern "C" void runConnectionCallback(int);
 
 -(void)addHeaders:(NSArray*)headers toRequest:(NSMutableURLRequest*)request
 {
-    NSLog(@"headaers count %i", [headers count]);
+   //NSLog(@"headaers count %i", [headers count]);
     for (int i = 0; i < [headers count]; i += 2)
     {
-        NSLog(@"add header: %i : %f", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:1]);
+        //NSLog(@"add header: %i : %f", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:1]);
         [request addValue:[headers objectAtIndex:(i + 1)] forHTTPHeaderField:[headers objectAtIndex:1]];
     }
 }

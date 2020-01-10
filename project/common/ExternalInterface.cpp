@@ -60,7 +60,7 @@ static std::vector<std::string> valToVector(value vals) {
     for (int i=0; i < array_size; i++) {
         vector_c.push_back(safe_val_string(val_array_i(vals, i)));
     }
-    std::cout << "----------> VECTOR SIZE "<<std::to_string(vector_c.size())<<"\n";
+    //std::cout << "----------> VECTOR SIZE "<<std::to_string(vector_c.size())<<"\n";
     return vector_c;
 }
 
