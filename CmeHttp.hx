@@ -6,14 +6,22 @@ class CmeHttp
 	public var responseData(default, null) : Null<String>;
 	private var postData:String;
 	private var isBinary:Bool;
+	private var headers:Array<String>;
 
 	public function new(url:String, isBinary:Bool = false) {
 		this.isBinary = isBinary;
 		this.url = url;
+		headers = [];
 	}
 
 	public function setPostData(data:String):Void {
 		postData = data;
+	}
+
+	public function addHeader(name:String, value:String):Void
+	{
+		headers.push(name);
+		headers.push(value);
 	}
 
 	public function cancel():Void
@@ -22,20 +30,21 @@ class CmeHttp
 	}
 
 	public function request(?post:Bool):Void {
+
 		if (!post)
 		{
 			if (!this.isBinary)
 			{
-				ConnectionManagerExtension.getInstance().getText(url, onData, onError);
+				ConnectionManagerExtension.getInstance().getText(url, onData, onError, headers);
 			}
 			else
 			{
-				ConnectionManagerExtension.getInstance().getBinary(url, onBinaryData, onError, onProgress);
+				ConnectionManagerExtension.getInstance().getBinary(url, onBinaryData, onError, onProgress, headers);
 			}
 		}
 		else
 		{
-			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError);
+			ConnectionManagerExtension.getInstance().postText(url, postData, onData, onError, headers);
 		}
 		haxe.Timer.delay(stub, 16);
 	}

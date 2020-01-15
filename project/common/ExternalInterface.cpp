@@ -10,6 +10,7 @@
 #include <hx/CFFI.h>
 #include <stdio.h>
 #include <map>
+#include <iostream>
 #include "UtilsIos.h"
 
 #define safe_val_string(str) str==NULL ? "" : std::string(val_string(str))
@@ -25,6 +26,12 @@ struct Handler {
 
 std::map<int,Handler> handlers;
 AutoGCRoot* connectionCallback;
+
+void val_array_string(int size, value hx_array, std::string* result) {
+ for (int i=0; i < size; i++) {
+   result[i] = safe_val_string(val_array_i(hx_array, i));
+ }
+}
 
 static value connectionmanagerextension_isConnected () {
 
@@ -47,36 +54,60 @@ DEFINE_PRIM (connectionmanagerextension_getActiveConnectionType, 0);
 }
 DEFINE_PRIM (connectionmanagerextension_connectionStatusCallback, 1);*/
 
-static void connectionmanagerextension_getText (value url, value rId, value onSuccess, value onError) {
+static std::vector<std::string> valToVector(value vals) {
+    int array_size = val_array_size(vals);
+    std::vector<std::string> vector_c;
+    for (int i=0; i < array_size; i++) {
+        vector_c.push_back(safe_val_string(val_array_i(vals, i)));
+    }
+    //std::cout << "----------> VECTOR SIZE "<<std::to_string(vector_c.size())<<"\n";
+    return vector_c;
+}
+
+static void connectionmanagerextension_getText (value url, value rId, value onSuccess, value onError, value headers) {
 
 	Handler h;
 	h.onSuccess = new AutoGCRoot(onSuccess);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	getText(safe_val_string(url), val_int(rId));
+	int array_size = val_array_size(headers);
+	std::vector<std::string> headers_c = valToVector(headers);
+	getText(safe_val_string(url), val_int(rId), headers_c);
 }
-DEFINE_PRIM (connectionmanagerextension_getText, 4);
+DEFINE_PRIM (connectionmanagerextension_getText, 5);
 
-static void connectionmanagerextension_getBinary (value url, value rId, value onSuccess, value onProgress, value onError) {
-
+static void connectionmanagerextension_getBinary (value *args, int argsCount) {
+    value url = args[0];
+    value rId = args[1];
+    value onSuccess = args[2];
+    value onProgress = args[3];
+    value onError = args[4];
+    value headers = args[5];
 	Handler h;
 	h.onSuccess = new AutoGCRoot(onSuccess);
     h.onProgress = new AutoGCRoot(onProgress);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	getBinary(safe_val_string(url), val_int(rId));
+	std::vector<std::string> headers_c = valToVector(headers);
+	getBinary(safe_val_string(url), val_int(rId), headers_c);
 }
-DEFINE_PRIM (connectionmanagerextension_getBinary, 5);
+DEFINE_PRIM_MULT(connectionmanagerextension_getBinary);
 
-static void connectionmanagerextension_postJson (value url, value data, value rId, value onSuccess, value onError) {
-
+static void connectionmanagerextension_postJson (value *args, int argsCount) {
+    value url = args[0];
+    value data = args[1];
+    value rId = args[2];
+    value onSuccess = args[3];
+    value onError = args[4];
+    value headers = args[5];
 	Handler h;
 	h.onSuccess = new AutoGCRoot(onSuccess);
 	h.onError = new AutoGCRoot(onError);
 	handlers.insert(std::make_pair(val_int(rId), h));
-	postJson(safe_val_string(url), safe_val_string(data), val_int(rId));
+	std::vector<std::string> headers_c = valToVector(headers);
+	postJson(safe_val_string(url), safe_val_string(data), val_int(rId), headers_c);
 }
-DEFINE_PRIM (connectionmanagerextension_postJson, 5);
+DEFINE_PRIM_MULT(connectionmanagerextension_postJson);
 
 
 extern "C" void connectionmanagerextension_main () {

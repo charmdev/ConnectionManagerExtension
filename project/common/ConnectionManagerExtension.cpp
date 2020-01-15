@@ -10,13 +10,13 @@ namespace connectionmanagerextension {
 		return 0;
     }
 
-    void getText(std::string url, int rId) {
+    void getText(std::string url, int rId, std::vector<std::string> headers) {
 
     }
-    void getBinary(std::string url, int rId) {
+    void getBinary(std::string url, int rId, std::vector<std::string> headers) {
 
 	}
-	void postJson(std::string url, std::string data, int rId) {
+	void postJson(std::string url, std::string data, int rId, std::vector<std::string> headers) {
 
 	}
 }
