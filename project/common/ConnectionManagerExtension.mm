@@ -110,7 +110,7 @@ extern "C" void runConnectionCallback(int);
 
 +(HttpConnection *) getInstance;
 -(void)getText:(NSString*)url withId:(int)id withHeaders:(NSMutableArray*)headers;
--(void)getBinary:(NSString*)url withId:(int)id;// withHeaders:(NSArray*)headers;
+-(void)getBinary:(NSString*)url withId:(int)id withHeaders:(NSMutableArray*)headers;
 @end
 
 @implementation HttpConnection
@@ -139,11 +139,11 @@ extern "C" void runConnectionCallback(int);
 
 -(void)addHeaders:(NSArray*)headers toRequest:(NSMutableURLRequest*)request
 {
-   //NSLog(@"headaers count %i", [headers count]);
+   //NSLog(@"headers count %@", [headers count]);
     for (int i = 0; i < [headers count]; i += 2)
     {
-        //NSLog(@"add header: %i : %f", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:1]);
-        [request addValue:[headers objectAtIndex:(i + 1)] forHTTPHeaderField:[headers objectAtIndex:1]];
+        //NSLog(@"add header: %@ : %@", [headers objectAtIndex:(i + 1)], [headers objectAtIndex:i]);
+        [request addValue:[headers objectAtIndex:(i + 1)] forHTTPHeaderField:[headers objectAtIndex:i]];
     }
 }
 
