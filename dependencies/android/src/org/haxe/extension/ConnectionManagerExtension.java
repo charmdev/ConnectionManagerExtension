@@ -49,13 +49,15 @@ public class ConnectionManagerExtension extends Extension {
 		public HaxeObject callbackObject;
 		public boolean isBinary;
 		public String postData;
+		public String[] headers;
 
-		public LoadingParams(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData) {
+		public LoadingParams(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData, String[] headers) {
 			this.requestUrl = requestUrl;
 			this.requestId = requestId;
 			this.callbackObject = callbackObject;
 			this.isBinary = isBinary;
 			this.postData = postData;
+			this.headers = headers;
 		}
 	}
 
@@ -87,7 +89,12 @@ public class ConnectionManagerExtension extends Extension {
 				}
 				connection.setConnectTimeout(5000);
 				connection.setReadTimeout(30000);
-				
+
+				for (int i = 0; i < loadingParams.headers.length; i += 2)
+				{
+					connection.setRequestProperty(loadingParams.headers[i], loadingParams.headers[i + 1]);
+					Log.i(TAG, "add header " + loadingParams.headers[i] + ":" + loadingParams.headers[i + 1]);
+				}
 				if (loadingParams.postData != null){
 					Log.i(TAG, "is post");
 					int respCode = sendDataForResponse(connection, loadingParams.postData);
@@ -246,22 +253,22 @@ public class ConnectionManagerExtension extends Extension {
 		return 0;
 	}
 
-	public static void getBinary(String requestUrl, int requestId, HaxeObject callbackObject){
-		sendRequest(requestUrl, requestId, callbackObject, true,  null);
+	public static void getBinary(String requestUrl, int requestId, HaxeObject callbackObject, String[] headers){
+		sendRequest(requestUrl, requestId, callbackObject, true,  null, headers);
 	}
 
-	public static void getText(String requestUrl, int requestId, HaxeObject callbackObject){
-		sendRequest(requestUrl, requestId, callbackObject, false, null);
+	public static void getText(String requestUrl, int requestId, HaxeObject callbackObject, String[] headers){
+		sendRequest(requestUrl, requestId, callbackObject, false, null, headers);
 	}
 
-	public static void postText(String requestUrl, int requestId, HaxeObject callbackObject, String data){
-		sendRequest(requestUrl, requestId, callbackObject, false, data);
+	public static void postText(String requestUrl, int requestId, HaxeObject callbackObject, String data, String[] headers){
+		sendRequest(requestUrl, requestId, callbackObject, false, data, headers);
 	}
 
-	private static void sendRequest(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData) {
+	private static void sendRequest(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData, String[] headers) {
 		Log.i(TAG, "get url "+requestUrl);
 		Log.i(TAG, "requestId "+requestId);
-		LoadingParams p = new LoadingParams(requestUrl, requestId, callbackObject, isBinary, postData);
+		LoadingParams p = new LoadingParams(requestUrl, requestId, callbackObject, isBinary, postData, headers);
 		AsyncTask task = new LoadingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p);
 	}
 
