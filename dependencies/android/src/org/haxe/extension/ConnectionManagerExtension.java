@@ -37,6 +37,7 @@ import android.net.wifi.WifiManager;
 import android.net.NetworkInfo;
 import android.util.Base64;
 
+import android.opengl.GLSurfaceView;
 import org.haxe.lime.HaxeObject;
 
 
@@ -101,7 +102,7 @@ public class ConnectionManagerExtension extends Extension {
 					Log.i(TAG, "post response code "+String.valueOf(respCode));
 					Log.i(TAG , "post response message "+connection.getResponseMessage());
 					if (respCode == HttpURLConnection.HTTP_OK){
-						result = readData(connection, loadingParams.callbackObject, loadingParams.isBinary);
+						result = readData(connection, loadingParams.isBinary);
 					}
 					else if (respCode == HttpURLConnection.HTTP_NO_CONTENT){
 						result = "";
@@ -112,10 +113,10 @@ public class ConnectionManagerExtension extends Extension {
 				}
 				else
 				{
-					Log.i(TAG, "is get");
-					result = readData(connection, loadingParams.callbackObject, loadingParams.isBinary);
+					Log.i(TAG, "is get" + loadingParams.requestUrl);
+					result = readData(connection, loadingParams.isBinary);
 				}
-				Log.i(TAG, "success");
+				Log.i(TAG, "success" + loadingParams.requestUrl);
 			}
 			catch (IOException e) {
 				Log.i(TAG, "io error " + e.toString());
@@ -133,21 +134,53 @@ public class ConnectionManagerExtension extends Extension {
 
 		@Override
 		protected void onProgressUpdate(Integer... values) {
-			int progress = values[0];
 			if (loadingParams != null) {
-				loadingParams.callbackObject.call1("onProgress_jni", progress);
+				final int progress = values[0];
+				final int requestId = loadingParams.requestId;
+				final HaxeObject callbackObject = loadingParams.callbackObject;
+
+				if (Extension.mainView == null) return;
+				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
+
+				view.queueEvent( new Runnable() {
+					@Override
+					public void run() {
+						Log.i(TAG, "onProgress_jni "+requestId);
+						callbackObject.call2("onProgress_jni", requestId, progress);
+				}});
 			}
 		}
 
 		@Override
-		protected void onPostExecute(String result) {
+		protected void onPostExecute(final String result) {
 			super.onPostExecute(result);
 
+			Log.i(TAG, "onPostExecute"+loadingParams.requestUrl);
+
+			final int requestId = loadingParams.requestId;
+			final HaxeObject callbackObject = loadingParams.callbackObject;
 			if (error != null) {
-				loadingParams.callbackObject.call1("onError_jni", error.toString());
+				if (Extension.mainView == null) return;
+				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
+				final String errorMesage = error.toString();
+
+				view.queueEvent( new Runnable() {
+					@Override
+					public void run() {
+						Log.i(TAG, "onError_jni "+requestId);
+						callbackObject.call2("onError_jni", requestId, errorMesage);
+				}});
 			}
 			else {
-				loadingParams.callbackObject.call1("onSuccess_jni", result);
+				if (Extension.mainView == null) return;
+				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
+
+				view.queueEvent( new Runnable() {
+					@Override
+					public void run() {
+						Log.i(TAG, "onSuccess_jni "+requestId);
+						callbackObject.call2("onSuccess_jni", requestId, result);
+				}});
 			}
 			loadingParams = null;
 		}
@@ -172,12 +205,12 @@ public class ConnectionManagerExtension extends Extension {
 			return  respCode;
 		}
 
-		private String readData(HttpURLConnection connection, HaxeObject callbackObject, boolean isBinary) throws Exception{
+		private String readData(HttpURLConnection connection, boolean isBinary) throws Exception{
 			String result;
 			InputStream in = new BufferedInputStream(connection.getInputStream());
 
 			if (isBinary){
-				result = readBinaryStream(in, callbackObject);
+				result = readBinaryStream(in);
 			}
 			else {
 				result = readTextStream(in);
@@ -189,7 +222,7 @@ public class ConnectionManagerExtension extends Extension {
 		}
 
 
-		private String readBinaryStream(InputStream in, HaxeObject callbackObject) throws Exception{
+		private String readBinaryStream(InputStream in) throws Exception{
 
 			byte[] data;
 			int progress = 0;
@@ -266,6 +299,7 @@ public class ConnectionManagerExtension extends Extension {
 	}
 
 	private static void sendRequest(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData, String[] headers) {
+		Log.i(TAG, "handle "+callbackObject.__haxeHandle);
 		Log.i(TAG, "get url "+requestUrl);
 		Log.i(TAG, "requestId "+requestId);
 		LoadingParams p = new LoadingParams(requestUrl, requestId, callbackObject, isBinary, postData, headers);

@@ -7,41 +7,27 @@ import neko.Lib;
 #end
 
 #if (android && openfl)
-import openfl.utils.JNI;
+import nme.utils.JNI;
 #end
 
 import haxe.Json;
 import haxe.crypto.Base64;
 import haxe.io.Bytes;
 
-class Callbacks {
-	private var onSuccess:String -> Void;
-	private var onError:String -> Void;
-	private var onProgress:Int -> Void;
 
-	public function new(onSuccess:String -> Void, onError:String -> Void, ?onProgress:Int -> Void) {
-		this.onSuccess = onSuccess;
-		this.onError = onError;
-		this.onProgress = onProgress;
-	}
 
-	public function onProgress_jni(progress:Int) {
-		if (onProgress != null) onProgress(progress);
-	}
+typedef Callbacks = 
+{
+	onSuccess:String->Void,
+	onError:String->Void,
+	onProgress:Int->Void
+};
 
-	public function onSuccess_jni(data:String) {
-		onSuccess(data);
-	}
-
-	public function onError_jni(data:String) {
-		onError(data);
-	}
-}
-
+@:headerCode('
+	#include <android/log.h>
+	#define ELOG(args...) __android_log_print(ANDROID_LOG_ERROR, "NME",args)
+')
 class ConnectionManagerExtension {
-
-
-
 	private var requestId:Int = 0;
 	private static var instance:ConnectionManagerExtension;
 
@@ -52,13 +38,13 @@ class ConnectionManagerExtension {
 	private static var connectionmanagerextension_getText = Lib.load("connectionmanagerextension", "connectionmanagerextension_getText", 5);
 	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", -1);
 	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", -1);
-	#elseif (android && openfl)	
+	#elseif (android)	
 	private var connectionmanagerextension_isConnected_jni:Dynamic;
 	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic;
 	private var connectionmanagerextension_getBinary_jni:Dynamic;
 	private var connectionmanagerextension_getText_jni:Dynamic;
 	private var connectionmanagerextension_postText_jni:Dynamic;
-	private var callbacks:Map<String, Callbacks>;
+	private var callbacks:Map<Int, Callbacks> = [];
 	#end
 
 	private function new()
@@ -72,13 +58,13 @@ class ConnectionManagerExtension {
 		{
 			instance = new ConnectionManagerExtension();
 		}
-
+		untyped __cpp__('ELOG("CME hx instance: %p", &::ConnectionManagerExtension_obj::instance)');
 		return instance;
 	}
 
 	private function init():Void
 	{
-		#if (android && openfl)
+		#if (android)
 			connectionmanagerextension_isConnected_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
 			connectionmanagerextension_getActiveConnectionType_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
 			connectionmanagerextension_getBinary_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;[Ljava/lang/String;)V");
@@ -148,7 +134,8 @@ class ConnectionManagerExtension {
 	private function getText (url:String, onSuccess:String -> Void, onError:String -> Void, headers:Array<String>):Void
 	{
 		#if android
-		connectionmanagerextension_getText_jni(url, requestId, new Callbacks(onSuccess, onError), headers);
+		addCallbacks(requestId, onSuccess, onError);
+		connectionmanagerextension_getText_jni(url, requestId, getInstance(), headers);
 		#elseif ios
 		connectionmanagerextension_getText(url, requestId, onSuccess, onError, headers);
 		#end
@@ -159,7 +146,8 @@ class ConnectionManagerExtension {
 	private function getBinary (url:String, onSuccess:Bytes -> Void, onError:String -> Void, onProgress:Int -> Void, headers:Array<String>):Void
 	{
 		#if android
-		connectionmanagerextension_getBinary_jni(url, requestId, new Callbacks(onBinarySuccess.bind(onSuccess), onError, onProgress), headers);
+		addCallbacks(requestId, onBinarySuccess.bind(onSuccess), onError, onProgress);
+		connectionmanagerextension_getBinary_jni(url, requestId, getInstance(), headers);
 		#elseif ios
 		connectionmanagerextension_getBinary(url, requestId, onBinarySuccess.bind(onSuccess), onProgress, onError, headers);
 		#end
@@ -170,12 +158,50 @@ class ConnectionManagerExtension {
 	private function postText (url:String, data:String, onSuccess:String -> Void, onError:String -> Void, headers:Array<String>):Void
 	{
 		#if android
-		connectionmanagerextension_postText_jni(url, requestId, new Callbacks(onSuccess, onError), data, headers);
+		addCallbacks(requestId, onSuccess, onError);
+		connectionmanagerextension_postText_jni(url, requestId, getInstance(), data, headers);
 		#elseif ios
 		connectionmanagerextension_postJson(url, data, requestId, onSuccess, onError, headers);
 		#end
 		requestId += 1;
 	}
+
+#if android
+	private function addCallbacks(requestId:Int, onSuccess:String -> Void, onError:String -> Void, ?onProgress:Int -> Void):Void
+	{
+		var c:Callbacks =
+		{
+			onSuccess:onSuccess,
+			onError:onError,
+			onProgress:onProgress
+		};
+		callbacks[requestId] = c;
+	}
+
+	public function onProgress_jni(requestId:Int, progress:Int) {
+		trace('onProgress_jni: $requestId');
+		var c = callbacks[requestId];
+		trace('requestId: $requestId, $c');
+		if (c.onProgress != null) c.onProgress(progress);
+	}
+
+	public function onSuccess_jni(requestId:Int, data:String) {
+		trace('onSuccess_jni: $requestId');
+		trace('onSuccess_jni1: $callbacks');
+		trace('onSuccess_jni2: ${callbacks.exists(requestId)}');
+		var c = callbacks[requestId];
+		trace('onSuccess_jni3:');
+		trace('requestId: $requestId, $c');
+		c.onSuccess(data);
+	}
+
+	public function onError_jni(requestId:Int, data:String) {
+		trace('onError_jni: $requestId');
+		var c = callbacks[requestId];
+		trace('requestId: $requestId, $c');
+		c.onError(data);
+	}
+#end
 
 	private function onSuccessImpl (data:String):Void
 	{
