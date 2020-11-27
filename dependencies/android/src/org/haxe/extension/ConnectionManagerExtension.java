@@ -139,15 +139,12 @@ public class ConnectionManagerExtension extends Extension {
 				final int requestId = loadingParams.requestId;
 				final HaxeObject callbackObject = loadingParams.callbackObject;
 
-				if (Extension.mainView == null) return;
-				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
-
-				view.queueEvent( new Runnable() {
+				Extension.sendHaxe(new Runnable() {
 					@Override
 					public void run() {
-						Log.i(TAG, "onProgress_jni "+requestId);
 						callbackObject.call2("onProgress_jni", requestId, progress);
-				}});
+					}
+				});
 			}
 		}
 
@@ -155,32 +152,25 @@ public class ConnectionManagerExtension extends Extension {
 		protected void onPostExecute(final String result) {
 			super.onPostExecute(result);
 
-			Log.i(TAG, "onPostExecute"+loadingParams.requestUrl);
-
 			final int requestId = loadingParams.requestId;
 			final HaxeObject callbackObject = loadingParams.callbackObject;
 			if (error != null) {
-				if (Extension.mainView == null) return;
-				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
 				final String errorMesage = error.toString();
 
-				view.queueEvent( new Runnable() {
+				Extension.sendHaxe(new Runnable() {
 					@Override
 					public void run() {
-						Log.i(TAG, "onError_jni "+requestId);
 						callbackObject.call2("onError_jni", requestId, errorMesage);
-				}});
+					}
+				});
 			}
 			else {
-				if (Extension.mainView == null) return;
-				GLSurfaceView view = (GLSurfaceView) Extension.mainView;
-
-				view.queueEvent( new Runnable() {
+				Extension.sendHaxe(new Runnable() {
 					@Override
 					public void run() {
-						Log.i(TAG, "onSuccess_jni "+requestId);
 						callbackObject.call2("onSuccess_jni", requestId, result);
-				}});
+					}
+				});
 			}
 			loadingParams = null;
 		}
@@ -299,9 +289,6 @@ public class ConnectionManagerExtension extends Extension {
 	}
 
 	private static void sendRequest(String requestUrl, int requestId, HaxeObject callbackObject, boolean isBinary, String postData, String[] headers) {
-		Log.i(TAG, "handle "+callbackObject.__haxeHandle);
-		Log.i(TAG, "get url "+requestUrl);
-		Log.i(TAG, "requestId "+requestId);
 		LoadingParams p = new LoadingParams(requestUrl, requestId, callbackObject, isBinary, postData, headers);
 		AsyncTask task = new LoadingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p);
 	}

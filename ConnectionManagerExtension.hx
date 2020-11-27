@@ -14,8 +14,6 @@ import haxe.Json;
 import haxe.crypto.Base64;
 import haxe.io.Bytes;
 
-
-
 typedef Callbacks = 
 {
 	onSuccess:String->Void,
@@ -23,10 +21,6 @@ typedef Callbacks =
 	onProgress:Int->Void
 };
 
-@:headerCode('
-	#include <android/log.h>
-	#define ELOG(args...) __android_log_print(ANDROID_LOG_ERROR, "NME",args)
-')
 class ConnectionManagerExtension {
 	private var requestId:Int = 0;
 	private static var instance:ConnectionManagerExtension;
@@ -39,17 +33,16 @@ class ConnectionManagerExtension {
 	private static var connectionmanagerextension_getBinary = Lib.load("connectionmanagerextension", "connectionmanagerextension_getBinary", -1);
 	private static var connectionmanagerextension_postJson = Lib.load("connectionmanagerextension", "connectionmanagerextension_postJson", -1);
 	#elseif (android)	
-	private var connectionmanagerextension_isConnected_jni:Dynamic;
-	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic;
-	private var connectionmanagerextension_getBinary_jni:Dynamic;
-	private var connectionmanagerextension_getText_jni:Dynamic;
-	private var connectionmanagerextension_postText_jni:Dynamic;
+	private var connectionmanagerextension_isConnected_jni:Dynamic = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
+	private var connectionmanagerextension_getActiveConnectionType_jni:Dynamic = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
+	private var connectionmanagerextension_getBinary_jni:Dynamic = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;[Ljava/lang/String;)V");
+	private var connectionmanagerextension_getText_jni:Dynamic = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;[Ljava/lang/String;)V");
+	private var connectionmanagerextension_postText_jni:Dynamic = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "postText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;Ljava/lang/String;[Ljava/lang/String;)V");
 	private var callbacks:Map<Int, Callbacks> = [];
 	#end
 
 	private function new()
 	{
-		init();
 	}
 
 	public static function getInstance():ConnectionManagerExtension
@@ -58,19 +51,7 @@ class ConnectionManagerExtension {
 		{
 			instance = new ConnectionManagerExtension();
 		}
-		untyped __cpp__('ELOG("CME hx instance: %p", &::ConnectionManagerExtension_obj::instance)');
 		return instance;
-	}
-
-	private function init():Void
-	{
-		#if (android)
-			connectionmanagerextension_isConnected_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "isConnected", "()Z");
-			connectionmanagerextension_getActiveConnectionType_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getActiveConnectionType", "()I");
-			connectionmanagerextension_getBinary_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getBinary", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;[Ljava/lang/String;)V");
-			connectionmanagerextension_getText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "getText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;[Ljava/lang/String;)V");
-			connectionmanagerextension_postText_jni = JNI.createStaticMethod("org.haxe.extension.ConnectionManagerExtension", "postText", "(Ljava/lang/String;ILorg/haxe/lime/HaxeObject;Ljava/lang/String;[Ljava/lang/String;)V");
-		#end
 	}
 
 	public function isConnected():Bool
@@ -179,39 +160,31 @@ class ConnectionManagerExtension {
 	}
 
 	public function onProgress_jni(requestId:Int, progress:Int) {
-		trace('onProgress_jni: $requestId');
 		var c = callbacks[requestId];
-		trace('requestId: $requestId, $c');
-		if (c.onProgress != null) c.onProgress(progress);
+		if (c != null && c.onProgress != null) c.onProgress(progress);
 	}
 
 	public function onSuccess_jni(requestId:Int, data:String) {
-		trace('onSuccess_jni: $requestId');
-		trace('onSuccess_jni1: $callbacks');
-		trace('onSuccess_jni2: ${callbacks.exists(requestId)}');
 		var c = callbacks[requestId];
-		trace('onSuccess_jni3:');
-		trace('requestId: $requestId, $c');
-		c.onSuccess(data);
+		if (c != null)
+		{
+			c.onSuccess(data);
+			callbacks.remove(requestId);
+		}
+		
 	}
 
 	public function onError_jni(requestId:Int, data:String) {
-		trace('onError_jni: $requestId');
 		var c = callbacks[requestId];
-		trace('requestId: $requestId, $c');
-		c.onError(data);
+		if (c != null)
+		{
+			c.onError(data);
+			callbacks.remove(requestId);
+		}
 	}
 #end
 
-	private function onSuccessImpl (data:String):Void
-	{
-	}
-
-	private function onErrorImpl (error:String):Void
-	{
-	}
-
-	private function onBinarySuccess (onSuccess:Bytes -> Void, data:String):Void
+	private function onBinarySuccess(onSuccess:Bytes -> Void, data:String):Void
 	{
 		try
 		{
@@ -220,7 +193,7 @@ class ConnectionManagerExtension {
 		}
 		catch (e:Dynamic)
 		{
-			
+			trace('onBinarySuccess decode error: $e');
 		}
 	}
 }
