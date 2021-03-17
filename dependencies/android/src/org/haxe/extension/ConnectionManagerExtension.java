@@ -116,7 +116,7 @@ public class ConnectionManagerExtension extends Extension {
 				}
 				else 
 				{
-					throw new Exception(respCode);
+					throw new Exception(String.valueOf(respCode));
 				}
 				Log.i(TAG, "success" + loadingParams.requestUrl);
 			}
