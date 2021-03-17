@@ -157,7 +157,7 @@ public class ConnectionManagerExtension extends Extension {
 			final int requestId = loadingParams.requestId;
 			final HaxeObject callbackObject = loadingParams.callbackObject;
 			if (error != null) {
-				final String errorMesage = error.toString();
+				final String errorMesage = error.getMessage();
 
 				Extension.sendHaxe(new Runnable() {
 					@Override
