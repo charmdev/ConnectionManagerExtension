@@ -96,25 +96,27 @@ public class ConnectionManagerExtension extends Extension {
 					connection.setRequestProperty(loadingParams.headers[i], loadingParams.headers[i + 1]);
 					Log.i(TAG, "add header " + loadingParams.headers[i] + ":" + loadingParams.headers[i + 1]);
 				}
-				if (loadingParams.postData != null){
-					Log.i(TAG, "is post");
-					int respCode = sendDataForResponse(connection, loadingParams.postData);
-					Log.i(TAG, "post response code "+String.valueOf(respCode));
-					Log.i(TAG , "post response message "+connection.getResponseMessage());
-					if (respCode == HttpURLConnection.HTTP_OK){
-						result = readData(connection, loadingParams.isBinary);
-					}
-					else if (respCode == HttpURLConnection.HTTP_NO_CONTENT){
-						result = "";
-					}
-					else {
-						throw new Exception("CME error sending post, response code is " + respCode);
-					}
-				}
-				else
+				if (loadingParams.postData != null) 
 				{
-					Log.i(TAG, "is get" + loadingParams.requestUrl);
+					Log.i(TAG, "is post");
+					sendDataForResponse(connection, loadingParams.postData);
+				}
+
+				int respCode = connection.getResponseCode();
+				Log.i(TAG, "post response code "+String.valueOf(respCode));
+				Log.i(TAG , "post response message "+connection.getResponseMessage());
+					
+				if (respCode == HttpURLConnection.HTTP_OK)
+				{
 					result = readData(connection, loadingParams.isBinary);
+				}
+				else if (respCode == HttpURLConnection.HTTP_NO_CONTENT)
+				{
+					result = "";
+				}
+				else 
+				{
+					throw new Exception(respCode);
 				}
 				Log.i(TAG, "success" + loadingParams.requestUrl);
 			}
