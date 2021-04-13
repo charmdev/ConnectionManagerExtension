@@ -43,7 +43,7 @@ extern "C" void runConnectionCallback(int);
 {
 	if( self == [super init])
 	{
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNetworkChange:) name:kReachabilityChangedNotification object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNetworkChange:) name:kReachabilityChangedNotification_ object:nil];
 		self.reach = [Reachability reachabilityForInternetConnection];
 		[self.reach startNotifier];
 		self.statusCallbackSetted = NO;
